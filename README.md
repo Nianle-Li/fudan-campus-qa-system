@@ -10,4 +10,4 @@
   - 需求分析（markdown）：docs/需求分析说明书.md
   - 需求分析（PDF）：docs/需求分析说明书.pdf
   - 需求分析附件（流程图）：docs/attachments
-  - ER 图初稿与设计说明：design/er
+  - ER 图初稿与设计说明（PDF）：design/ER.pdf
