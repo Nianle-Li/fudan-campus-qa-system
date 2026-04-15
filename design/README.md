@@ -1,3 +1,13 @@
-# Design
+# 设计文档
 
-Repository for ER diagrams, relational models, and design decisions.
+本目录用于存放数据库项目的概念设计相关材料。
+
+## ER 图维护约定
+
+`ER.drawio`、`ER.jpg` 和 `ER.pdf` 按“概念 ER 图”维护。
+
+- 不为了贴合关系模式而在实体框中加入外键字段。
+- 实体之间的关系只通过连线表示。
+- ER 图重点展示实体、核心属性及联系语义。
+
+外键、连接表、关系模式分解等逻辑设计层面的内容，应写在 `docs/关系模式初稿及说明.md` 中，不强行体现在概念 ER 图里。
