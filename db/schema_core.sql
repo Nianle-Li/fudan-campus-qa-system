@@ -1,5 +1,4 @@
--- 核心 SQL 草稿（Postgres 语法参考）
--- 建议作为初始 schema，并迁移到正式迁移框架（如 Flyway/Liquibase）中执行
+-- 核心 SQL 草稿（Postgres 语法）
 
 BEGIN;
 
