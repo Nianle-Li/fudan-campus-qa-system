@@ -1,0 +1,23 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: fcqa-postgres
+    environment:
+      POSTGRES_DB: fcqa
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - fcqa-postgres-data:/var/lib/postgresql/data
+      - ./db:/workspace/db:ro
+      - ./migrations:/workspace/migrations:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d fcqa"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  fcqa-postgres-data:
+    name: fcqa-postgres-data

@@ -59,7 +59,9 @@
 
 - 最终分支：`lll`
 - 最终目标：提交可运行系统、仓库整理结果、自我测试说明和课堂展示材料，支撑项目演讲、系统展示与同伴评审。
-- 快速运行：
+- 执行命令：
+
+### 1. 演示模式（不需要 PostgreSQL）
 
 ```powershell
 python -m pip install -r backend/requirements.txt
@@ -73,14 +75,57 @@ python backend/app.py
 http://127.0.0.1:8000
 ```
 
-- 正式 PostgreSQL 初始化：
+### 2. Docker Compose PostgreSQL 模式（推荐）
+
+启动 PostgreSQL 16 并初始化数据库：
+
+```powershell
+docker compose up -d
+docker exec -w /workspace/db fcqa-postgres psql -U postgres -d fcqa -v ON_ERROR_STOP=1 -f init.sql
+docker exec -w /workspace/db fcqa-postgres psql -U postgres -d fcqa -v ON_ERROR_STOP=1 -f verify_basic_queries.sql
+```
+
+连接 Docker 中的 PostgreSQL 启动后端：
+
+```powershell
+python -m pip install -r backend/requirements.txt
+Remove-Item Env:FCQA_DEMO_MODE -ErrorAction SilentlyContinue
+$env:DATABASE_URL="postgresql://postgres:postgres@localhost:5432/fcqa"
+python backend/app.py
+```
+
+浏览器访问：
+
+```text
+http://127.0.0.1:8000
+```
+
+停止 Docker 数据库服务：
+
+```powershell
+docker compose down
+```
+
+### 3. 本机已有 PostgreSQL 时
+
+初始化数据库：
 
 ```bash
 createdb fcqa
 psql -v ON_ERROR_STOP=1 -d fcqa -f db/init.sql
+psql -v ON_ERROR_STOP=1 -d fcqa -f db/verify_basic_queries.sql
 ```
 
-- 自动冒烟测试：
+启动后端：
+
+```powershell
+python -m pip install -r backend/requirements.txt
+Remove-Item Env:FCQA_DEMO_MODE -ErrorAction SilentlyContinue
+$env:DATABASE_URL="postgresql://postgres:postgres@localhost:5432/fcqa"
+python backend/app.py
+```
+
+### 4. 自动冒烟测试
 
 ```bash
 python scripts/smoke_test.py --start-demo
