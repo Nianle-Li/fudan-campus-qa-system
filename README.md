@@ -55,4 +55,42 @@
   - 前端说明： [frontend/README.md](frontend/README.md)
   - 阶段演示说明： [docs/阶段演示说明.md](docs/阶段演示说明.md)
 
+## 最终提交说明
+
+- 最终分支：`lll`
+- 最终目标：提交可运行系统、仓库整理结果、自我测试说明和课堂展示材料，支撑项目演讲、系统展示与同伴评审。
+- 快速运行：
+
+```powershell
+python -m pip install -r backend/requirements.txt
+$env:FCQA_DEMO_MODE="1"
+python backend/app.py
+```
+
+浏览器访问：
+
+```text
+http://127.0.0.1:8000
+```
+
+- 正式 PostgreSQL 初始化：
+
+```bash
+createdb fcqa
+psql -v ON_ERROR_STOP=1 -d fcqa -f db/init.sql
+```
+
+- 自动冒烟测试：
+
+```bash
+python scripts/smoke_test.py --start-demo
+```
+
+- 最终交付材料：
+  - 最终提交说明： [docs/最终提交说明.md](docs/最终提交说明.md)
+  - 自我测试说明： [docs/自我测试说明.md](docs/自我测试说明.md)
+  - GitHub 仓库整理说明： [docs/GitHub仓库整理说明.md](docs/GitHub仓库整理说明.md)
+  - 最终展示材料： [docs/最终展示材料.md](docs/最终展示材料.md)
+  - 冒烟测试脚本： [scripts/smoke_test.py](scripts/smoke_test.py)
+
 
