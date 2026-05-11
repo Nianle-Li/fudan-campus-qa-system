@@ -32,7 +32,27 @@
 - 提交材料：
   - 完整表结构说明： [docs/完整表结构说明（定稿）.md](docs/完整表结构说明（定稿）.md)
   - 主要约束设计说明： [docs/主要约束设计说明.md](docs/主要约束设计说明.md)
-  - 核心 SQL 草稿（单文件快照）： [db/schema_core.sql](db/schema_core.sql)
+  - 核心建表 SQL（单文件快照）： [db/schema_core.sql](db/schema_core.sql)
   - 迁移脚本（按序）： migrations文件夹
+
+## 数据库实现交付
+
+- 完成任务：完成可执行的 PostgreSQL 建表脚本、约束实现、索引设计和初始测试数据，支持数据库创建、数据导入、基础查询与后续功能联调。
+- 提交材料：
+  - 建表与索引入口： [db/schema.sql](db/schema.sql)
+  - 一键初始化入口： [db/init.sql](db/init.sql)
+  - 初始测试数据： [db/seeds/001_initial_data.sql](db/seeds/001_initial_data.sql)
+  - 基础验收查询： [db/verify_basic_queries.sql](db/verify_basic_queries.sql)
+  - 使用说明： [db/README.md](db/README.md)
+
+## 系统核心功能与阶段整合
+
+- 完成任务：完成前端、后端与数据库的基础联动，实现核心数据查询、建筑/设施/活动维护、查询记录写入以及关键 SQL 查询结果展示。
+- 运行入口：
+  - 后端服务： [backend/app.py](backend/app.py)
+  - 前端页面： [frontend/index.html](frontend/index.html)
+  - 后端说明： [backend/README.md](backend/README.md)
+  - 前端说明： [frontend/README.md](frontend/README.md)
+  - 阶段演示说明： [docs/阶段演示说明.md](docs/阶段演示说明.md)
 
 

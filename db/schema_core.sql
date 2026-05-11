@@ -1,4 +1,4 @@
--- 核心 SQL 草稿（Postgres 语法）
+-- 核心建表 SQL 快照（Postgres 语法）
 
 BEGIN;
 

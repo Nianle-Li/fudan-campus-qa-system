@@ -1,3 +1,15 @@
 # Frontend
 
-UI stubs, assets, and client-side integrations go here when ready.
+静态前端工作台，不需要构建步骤。启动后端后访问：
+
+```text
+http://127.0.0.1:8000
+```
+
+页面能力：
+
+- 查看数据库连接状态
+- 查询校区、建筑、设施、课程和活动
+- 对建筑、设施、活动执行新增、修改、删除
+- 写入一条用户查询记录
+- 展示关键 SQL 文本及实际查询结果
