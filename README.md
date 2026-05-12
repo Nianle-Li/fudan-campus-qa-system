@@ -48,6 +48,7 @@
   - 初始/演示数据说明： [db/seeds/README.md](db/seeds/README.md)
   - 初始/演示 CSV 数据： [db/seeds/csv](db/seeds/csv)
   - 基础验收查询： [db/verify_basic_queries.sql](db/verify_basic_queries.sql)
+  - 导入查询展示说明： [docs/数据库导入查询展示说明.md](docs/数据库导入查询展示说明.md)
 - 快速初始化：
 
 ```bash
