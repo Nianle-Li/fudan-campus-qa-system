@@ -43,8 +43,11 @@ CREATE INDEX IF NOT EXISTS idx_course_name_trgm ON course USING gin (name gin_tr
 CREATE INDEX IF NOT EXISTS idx_facility_name_trgm ON facility USING gin (name gin_trgm_ops);
 
 -- 外键常用查询索引
+CREATE INDEX IF NOT EXISTS idx_course_offering_course_code ON course_offering (course_code);
+CREATE INDEX IF NOT EXISTS idx_schedule_facility ON course_offering_schedule (facility_id);
 CREATE INDEX IF NOT EXISTS idx_facility_building ON facility (building_id);
 CREATE INDEX IF NOT EXISTS idx_building_campus ON building (campus_id);
 CREATE INDEX IF NOT EXISTS idx_course_master ON course (course_master_code);
+CREATE INDEX IF NOT EXISTS idx_querylog_user_time ON query_log (user_id, query_time);
 
 COMMIT;
