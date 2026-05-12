@@ -37,13 +37,21 @@
 
 ## 第四阶段完成情况
 
-- 完成任务：已完成数据库物理实现主体，提交了建表 SQL、主要约束实现、必要的索引设计及初始测试数据。当前迁移脚本已经覆盖核心表结构、主键/外键/唯一/检查等主要约束，以及全文检索、模糊检索和常用外键/查询列索引，能够支撑数据库创建与后续展示联调所需的基础数据准备。
+- 完成任务：已完成数据库物理实现，提交了可执行建表 SQL、主要约束实现、必要索引设计、初始测试数据和基础验收查询。当前脚本可从空库创建表结构、导入测试数据，并支撑基础存储、查询与后续功能联调。
 - 提交材料：
+  - 建表与索引入口： [db/schema.sql](db/schema.sql)
+  - 一键初始化入口： [db/init.sql](db/init.sql)
   - 建表与迁移脚本（按序）： [migrations](migrations)
   - 核心 SQL 快照： [db/schema_core.sql](db/schema_core.sql)
   - 主要约束设计说明： [docs/主要约束设计说明.md](docs/主要约束设计说明.md)
+  - 初始 SQL 测试数据： [db/seeds/001_initial_data.sql](db/seeds/001_initial_data.sql)
   - 初始/演示数据说明： [db/seeds/README.md](db/seeds/README.md)
   - 初始/演示 CSV 数据： [db/seeds/csv](db/seeds/csv)
-- 当前仍缺少：
-  - 仓库内尚缺少一份从空库出发可直接执行的统一初始化/导入脚本或标准命令说明，用于串联建表、导入 CSV 与序列重置。
-  - 仓库内尚缺少一份导入完成后的验收记录或示例查询结果，用于直接证明数据库已被实际创建、数据已被成功导入，并能够支持基本存储、查询与后续功能联调。
+  - 基础验收查询： [db/verify_basic_queries.sql](db/verify_basic_queries.sql)
+- 快速初始化：
+
+```bash
+createdb fcqa
+psql -v ON_ERROR_STOP=1 -d fcqa -f db/init.sql
+psql -v ON_ERROR_STOP=1 -d fcqa -f db/verify_basic_queries.sql
+```
