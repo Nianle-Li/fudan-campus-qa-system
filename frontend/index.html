@@ -3,111 +3,102 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>复旦校园百事通系统演示</title>
+    <title>复旦校园百事通 · 用户端</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
-  <body>
-    <header class="topbar">
+  <body class="user-shell">
+    <header class="topbar user-topbar">
       <div>
         <h1>复旦校园百事通</h1>
-        <p>数据库课程阶段联调演示</p>
+        <p>活动预约、校园查询与个人行程</p>
       </div>
+      <nav class="app-nav" aria-label="前端入口">
+        <a class="is-active" href="/">用户端</a>
+        <a href="/admin.html">管理员端</a>
+      </nav>
       <div id="health" class="status">连接中</div>
     </header>
 
-    <main class="workspace">
-      <section class="panel browser-panel">
-        <div class="panel-title">
-          <h2>数据查询</h2>
-          <button id="refreshBtn" type="button">刷新</button>
+    <main class="user-workspace">
+      <section class="panel user-hero">
+        <div class="hero-copy">
+          <span class="eyebrow">Campus Assistant</span>
+          <h2>查活动、约名额、看安排，一屏完成</h2>
+          <p>选择身份后即可浏览近期活动并预约，也可以用自然语言直接询问课程、设施、活动和校区信息。</p>
         </div>
-        <div class="toolbar">
-          <input id="searchInput" type="search" placeholder="输入关键词" />
-          <select id="entitySelect">
-            <option value="campuses">校区</option>
-            <option value="buildings">建筑</option>
+        <div class="hero-controls">
+          <label>
+            当前用户
+            <select id="userSelect"></select>
+          </label>
+          <div id="userProfile" class="profile-strip"></div>
+        </div>
+      </section>
+
+      <section class="panel activity-panel">
+        <div class="panel-title">
+          <h2>活动预约</h2>
+          <button id="refreshActivitiesBtn" type="button">刷新</button>
+        </div>
+        <form id="activityFilterForm" class="user-filter">
+          <label>关键词<input name="q" type="search" placeholder="活动、主办方、地点" /></label>
+          <label>校区<select name="campus_id" id="campusFilter"></select></label>
+          <label>开始不早于<input name="start_from" type="datetime-local" /></label>
+          <div class="actions">
+            <button type="submit">筛选</button>
+            <button id="clearActivityFilterBtn" type="button" class="secondary-button">清空</button>
+          </div>
+        </form>
+        <div id="activityCards" class="activity-grid"></div>
+      </section>
+
+      <aside class="panel reservation-panel">
+        <div class="panel-title">
+          <h2>我的预约</h2>
+          <button id="refreshReservationsBtn" type="button">刷新</button>
+        </div>
+        <div id="reservationList" class="reservation-list"></div>
+      </aside>
+
+      <section class="panel assistant-panel">
+        <div class="panel-title">
+          <h2>自然语言查询</h2>
+        </div>
+        <form id="nlQueryForm" class="user-nl-form">
+          <textarea id="nlQuestion" name="question" rows="3" required>近期有哪些校园活动？</textarea>
+          <input name="user_id" type="hidden" value="4" />
+          <div class="question-chips">
+            <button type="button" data-question="近期有哪些校园活动？">近期活动</button>
+            <button type="button" data-question="第二教学楼有哪些自习室？">自习空间</button>
+            <button type="button" data-question="数据库系统原理周几上课？">课程安排</button>
+            <button type="button" data-question="热门活动有哪些？">热门活动</button>
+          </div>
+          <div class="actions">
+            <button type="submit">提问</button>
+          </div>
+        </form>
+        <div id="nlAnswer" class="answer-box compact-answer"></div>
+      </section>
+
+      <section class="panel explore-panel">
+        <div class="panel-title">
+          <h2>校园速览</h2>
+          <select id="exploreEntity">
             <option value="facilities">设施</option>
             <option value="courses">课程</option>
-            <option value="activities">活动</option>
+            <option value="buildings">建筑</option>
           </select>
         </div>
-        <div id="dataTable" class="table-wrap"></div>
+        <form id="exploreForm" class="explore-form">
+          <input name="q" type="search" placeholder="输入关键词快速查看" />
+          <button type="submit">查看</button>
+        </form>
+        <div id="exploreContent" class="compact-list"></div>
       </section>
 
-      <section class="panel form-panel">
-        <div class="tabs" role="tablist" aria-label="维护对象">
-          <button class="tab is-active" data-form="buildingForm" type="button">建筑</button>
-          <button class="tab" data-form="facilityForm" type="button">设施</button>
-          <button class="tab" data-form="activityForm" type="button">活动</button>
-          <button class="tab" data-form="queryLogForm" type="button">查询记录</button>
-        </div>
-
-        <form id="buildingForm" class="crud-form">
-          <h2>建筑维护</h2>
-          <input type="hidden" name="building_id" />
-          <label>建筑名称<input name="name" required placeholder="例如：新教学楼" /></label>
-          <label>建筑类型<select name="type" data-options="buildingTypes"></select></label>
-          <label>所属校区<select name="campus_id" data-options="campuses"></select></label>
-          <div class="actions">
-            <button type="submit">保存</button>
-            <button type="button" data-reset="buildingForm">清空</button>
-            <button type="button" data-delete="building">删除</button>
-          </div>
-        </form>
-
-        <form id="facilityForm" class="crud-form hidden">
-          <h2>设施维护</h2>
-          <input type="hidden" name="facility_id" />
-          <label>设施名称<input name="name" required placeholder="例如：H2501" /></label>
-          <label>设施类型<select name="type" data-options="facilityTypes"></select></label>
-          <label>开放时间<input name="open_time" required placeholder="每日 08:00-22:00" /></label>
-          <label>所属建筑<select name="building_id" data-options="buildings"></select></label>
-          <div class="actions">
-            <button type="submit">保存</button>
-            <button type="button" data-reset="facilityForm">清空</button>
-            <button type="button" data-delete="facility">删除</button>
-          </div>
-        </form>
-
-        <form id="activityForm" class="crud-form hidden">
-          <h2>活动维护</h2>
-          <input type="hidden" name="activity_id" />
-          <label>活动名称<input name="name" required placeholder="例如：数据库答疑会" /></label>
-          <label>主办单位<input name="organizer" required placeholder="计算机科学技术学院" /></label>
-          <label>开始时间<input name="start_time" type="datetime-local" required /></label>
-          <label>结束时间<input name="end_time" type="datetime-local" /></label>
-          <label>举办设施<select name="facility_id" data-options="facilities"></select></label>
-          <label>活动简介<textarea name="description" rows="4" required></textarea></label>
-          <div class="actions">
-            <button type="submit">保存</button>
-            <button type="button" data-reset="activityForm">清空</button>
-            <button type="button" data-delete="activity">删除</button>
-          </div>
-        </form>
-
-        <form id="queryLogForm" class="crud-form hidden">
-          <h2>查询记录写入</h2>
-          <label>用户 ID<input name="user_id" type="number" min="1" required value="4" /></label>
-          <label>查询类别<select name="query_category" data-options="queryCategories"></select></label>
-          <label>查询内容<input name="query_content" required placeholder="例如：近期有哪些校园活动" /></label>
-          <div class="actions">
-            <button type="submit">写入记录</button>
-            <button type="button" data-reset="queryLogForm">清空</button>
-          </div>
-        </form>
-
-        <div id="message" class="message" aria-live="polite"></div>
-      </section>
-
-      <section class="panel sql-panel">
-        <div class="panel-title">
-          <h2>关键 SQL 效果</h2>
-          <button id="loadSqlBtn" type="button">执行</button>
-        </div>
-        <div id="sqlExamples" class="sql-list"></div>
-      </section>
+      <div id="message" class="toast-message" aria-live="polite"></div>
     </main>
 
-    <script src="/app.js"></script>
+    <script src="/user.js"></script>
   </body>
 </html>

@@ -59,6 +59,7 @@
 
 - 最终分支：`lll`
 - 最终目标：提交可运行系统、仓库整理结果、自我测试说明和课堂展示材料，支撑项目演讲、系统展示与同伴评审。
+- 核心能力：支持自然语言问句解析为 SQL、基础数据 CRUD、关键 SQL 效果展示和自动冒烟测试。
 - 快速运行：
 
 ```powershell
@@ -72,6 +73,14 @@ python backend/app.py
 ```text
 http://127.0.0.1:8000
 ```
+
+- Docker 一键部署数据库与后端：
+
+```bash
+docker compose up --build
+```
+
+首次启动会自动创建 PostgreSQL 16 数据库、执行 `db/init.sql` 并导入初始数据。后端容器会连接 `db:5432/fcqa`，并继续托管 `frontend/` 静态页面。浏览器访问 `http://localhost:8000`，数据库端口可通过本机 `5432` 访问。若需要重建初始数据，可执行 `docker compose down -v` 后重新启动。
 
 - 正式 PostgreSQL 初始化：
 

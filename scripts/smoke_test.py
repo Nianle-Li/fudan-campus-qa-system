@@ -87,6 +87,9 @@ def run_smoke(base_url: str) -> list[str]:
 
     index_html = request_text(base_url, "/")
     assert_true("复旦校园百事通" in index_html, "frontend index page did not render expected title")
+    assert_true("活动预约" in index_html, "user frontend did not render activity reservation area")
+    admin_html = request_text(base_url, "/admin.html")
+    assert_true("管理员数据治理" in admin_html, "admin frontend did not render expected title")
     passed.append("frontend")
 
     campuses = request_json(base_url, "GET", "/api/campuses")["items"]
@@ -173,6 +176,24 @@ def run_smoke(base_url: str) -> list[str]:
     assert_true(len(courses) >= 1, "course query returned no rows")
     passed.append("course join query")
 
+    nl_cases = [
+        ("邯郸校区有哪些教学楼？", "campus_buildings"),
+        ("第二教学楼有哪些自习室？", "building_facilities"),
+        ("李芳老师教什么课？", "teacher_courses"),
+        ("数据库系统原理周几上课？", "course_schedule"),
+        ("近期有哪些校园活动？", "recent_activities"),
+        ("热门活动有哪些？", "hot_activities"),
+    ]
+    for question, expected_intent in nl_cases:
+        nl_result = request_json(base_url, "POST", "/api/nl-query", {"question": question, "user_id": 4})
+        assert_true(
+            nl_result.get("intent") == expected_intent,
+            f"natural language query intent mismatch for {question}: {nl_result.get('intent')}",
+        )
+        assert_true(nl_result.get("row_count", 0) >= 1, f"natural language query returned no rows for {question}")
+        assert_true("SELECT" in nl_result.get("sql", ""), "natural language query did not expose SQL")
+    passed.append("natural language query")
+
     sql_examples = request_json(base_url, "GET", "/api/sql-examples")["items"]
     assert_true(len(sql_examples) >= 7, "sql examples endpoint returned too few examples")
     assert_true(all("sql" in item and "rows" in item for item in sql_examples), "sql examples missing sql or rows")
@@ -186,6 +207,31 @@ def run_smoke(base_url: str) -> list[str]:
     )["item"]
     assert_true("log_id" in log, "query log insert did not return log_id")
     passed.append("query log insert")
+
+    history = request_json(base_url, "GET", "/api/query-logs")["items"]
+    popular_queries = request_json(base_url, "GET", "/api/insights/popular-queries")["items"]
+    popular_activities = request_json(base_url, "GET", "/api/insights/popular-activities")["items"]
+    assert_true(len(history) >= 1, "query history returned no rows")
+    assert_true(len(popular_queries) >= 1, "popular query categories returned no rows")
+    assert_true(len(popular_activities) >= 1, "popular activities returned no rows")
+    passed.append("browse insights")
+
+    users = request_json(base_url, "GET", "/api/users")["items"]
+    assert_true(len(users) >= 1, "users endpoint returned no rows")
+    reservation = request_json(
+        base_url,
+        "POST",
+        f"/api/activities/{created_activity_id}/reserve",
+        {"user_id": 4},
+    )["item"]
+    assert_true(reservation["activity_id"] == created_activity_id, "reservation returned unexpected activity_id")
+    my_reservations = request_json(base_url, "GET", "/api/users/4/reservations")["items"]
+    assert_true(
+        any(item["activity_id"] == created_activity_id for item in my_reservations),
+        "created reservation was not listed in user reservations",
+    )
+    request_json(base_url, "DELETE", f"/api/activities/{created_activity_id}/reserve/4")
+    passed.append("activity reservation")
 
     request_json(base_url, "DELETE", f"/api/activities/{created_activity_id}")
     created_activity_id = None
