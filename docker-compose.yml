@@ -1,0 +1,26 @@
+services:
+  db:
+    image: postgres:16
+    container_name: fcqa-db
+    environment:
+      POSTGRES_DB: fcqa
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      TZ: Asia/Shanghai
+    ports:
+      - "5432:5432"
+    volumes:
+      - fcqa_pgdata:/var/lib/postgresql/data
+      - ./docker/postgres/01-init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./db:/opt/fcqa/db:ro
+      - ./migrations:/opt/fcqa/migrations:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d fcqa"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+    restart: unless-stopped
+
+volumes:
+  fcqa_pgdata:

@@ -12,6 +12,31 @@
 
 ## 创建数据库并导入数据
 
+使用 Docker Compose 可直接启动 PostgreSQL 16，并在首次创建数据卷时自动执行 `db/init.sql`：
+
+```bash
+docker compose up -d db
+```
+
+查看数据库状态：
+
+```bash
+docker compose ps
+```
+
+运行基础验收查询：
+
+```bash
+docker compose exec db psql -v ON_ERROR_STOP=1 -U postgres -d fcqa -f /opt/fcqa/db/verify_basic_queries.sql
+```
+
+如需完全重建数据库和初始数据，可删除数据卷后重新启动：
+
+```bash
+docker compose down -v
+docker compose up -d db
+```
+
 在 PostgreSQL 中创建数据库后，从仓库根目录执行：
 
 ```bash

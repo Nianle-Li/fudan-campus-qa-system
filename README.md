@@ -51,6 +51,13 @@
 - 快速初始化：
 
 ```bash
+docker compose up -d db
+docker compose exec db psql -v ON_ERROR_STOP=1 -U postgres -d fcqa -f /opt/fcqa/db/verify_basic_queries.sql
+```
+
+或使用本机 PostgreSQL：
+
+```bash
 createdb fcqa
 psql -v ON_ERROR_STOP=1 -d fcqa -f db/init.sql
 psql -v ON_ERROR_STOP=1 -d fcqa -f db/verify_basic_queries.sql
