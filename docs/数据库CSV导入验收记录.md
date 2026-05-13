@@ -8,16 +8,16 @@
 
 ```bash
 createdb fcqa
-psql -v ON_ERROR_STOP=1 -d fcqa -f db/init_csv.sql
-psql -v ON_ERROR_STOP=1 -d fcqa -f db/verify_basic_queries.sql
+psql -P pager=off -v ON_ERROR_STOP=1 -d fcqa -f db/init_csv.sql
+psql -P pager=off -v ON_ERROR_STOP=1 -d fcqa -f db/verify_basic_queries.sql
 ```
 
 Docker Compose：
 
 ```bash
 docker compose up -d db
-docker compose exec -w /opt/fcqa db psql -v ON_ERROR_STOP=1 -U postgres -d fcqa -f db/init_csv.sql
-docker compose exec -w /opt/fcqa db psql -v ON_ERROR_STOP=1 -U postgres -d fcqa -f db/verify_basic_queries.sql
+docker compose exec -w /opt/fcqa db psql -P pager=off -v ON_ERROR_STOP=1 -U postgres -d fcqa -f db/init_csv.sql
+docker compose exec -w /opt/fcqa db psql -P pager=off -v ON_ERROR_STOP=1 -U postgres -d fcqa -f db/verify_basic_queries.sql
 ```
 
 `db/init_csv.sql` 会依次执行建表、CSV 导入和序列重置；`db/seeds/import_csv.sql` 会按外键依赖顺序导入 `db/seeds/csv/` 下的 14 份 CSV。
