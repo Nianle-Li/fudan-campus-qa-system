@@ -50,13 +50,9 @@
   - CSV 演示数据说明： [db/seeds/README.md](db/seeds/README.md)
   - CSV 演示数据： [db/seeds/csv](db/seeds/csv)
   - 基础验收查询： [db/verify_basic_queries.sql](db/verify_basic_queries.sql)
-<<<<<<< HEAD
-  - **导入、查询展示说明**： [docs/数据库导入查询展示说明.md](docs/数据库导入查询展示说明.md)
-=======
-  - 导入查询展示说明： [docs/数据库导入查询展示说明.md](docs/数据库导入查询展示说明.md)
+  - 导入、查询展示说明： [docs/数据库导入查询展示说明.md](docs/数据库导入查询展示说明.md)
   - CSV 导入验收记录： [docs/数据库CSV导入验收记录.md](docs/数据库CSV导入验收记录.md)
 - 快速初始化：
->>>>>>> d66dfd3162ef47df721016cd04a926a97b546d2e
 
 ```bash
 docker compose up -d db
