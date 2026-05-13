@@ -29,7 +29,7 @@ docker compose ps
 运行基础验收查询：
 
 ```bash
-docker compose exec db psql -v ON_ERROR_STOP=1 -U postgres -d fcqa -f /opt/fcqa/db/verify_basic_queries.sql
+docker compose exec db psql -P pager=off -v ON_ERROR_STOP=1 -U postgres -d fcqa -f /opt/fcqa/db/verify_basic_queries.sql
 ```
 
 如需完全重建数据库和初始数据，可删除数据卷后重新启动：
@@ -43,32 +43,32 @@ docker compose up -d db
 
 ```bash
 createdb fcqa
-psql -v ON_ERROR_STOP=1 -d fcqa -f db/init.sql
+psql -P pager=off -v ON_ERROR_STOP=1 -d fcqa -f db/init.sql
 ```
 
 如需导入规模更大的 CSV 演示数据，从仓库根目录执行 CSV 初始化入口。该入口会串联建表、CSV 导入和序列重置：
 
 ```bash
 createdb fcqa
-psql -v ON_ERROR_STOP=1 -d fcqa -f db/init_csv.sql
+psql -P pager=off -v ON_ERROR_STOP=1 -d fcqa -f db/init_csv.sql
 ```
 
 Docker Compose 环境下可在容器内以 `/opt/fcqa` 为工作目录运行同一个入口：
 
 ```bash
-docker compose exec -w /opt/fcqa db psql -v ON_ERROR_STOP=1 -U postgres -d fcqa -f db/init_csv.sql
+docker compose exec -w /opt/fcqa db psql -P pager=off -v ON_ERROR_STOP=1 -U postgres -d fcqa -f db/init_csv.sql
 ```
 
 如果只需要创建表和索引，不导入测试数据：
 
 ```bash
-psql -v ON_ERROR_STOP=1 -d fcqa -f db/schema.sql
+psql -P pager=off -v ON_ERROR_STOP=1 -d fcqa -f db/schema.sql
 ```
 
 导入完成后可运行基础验收查询：
 
 ```bash
-psql -v ON_ERROR_STOP=1 -d fcqa -f db/verify_basic_queries.sql
+psql -P pager=off -v ON_ERROR_STOP=1 -d fcqa -f db/verify_basic_queries.sql
 ```
 
 CSV 导入后的行数、序列检查和示例查询结果见 [数据库CSV导入验收记录.md](../docs/数据库CSV导入验收记录.md)。

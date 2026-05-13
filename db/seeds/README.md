@@ -16,19 +16,19 @@
 仓库根目录下可执行完整初始化入口：
 
 ```bash
-psql -v ON_ERROR_STOP=1 -d fcqa -f db/init.sql
+psql -P pager=off -v ON_ERROR_STOP=1 -d fcqa -f db/init.sql
 ```
 
 如果数据库表结构已经存在，也可以单独导入 SQL 测试数据：
 
 ```bash
-psql -v ON_ERROR_STOP=1 -d fcqa -f db/seeds/001_initial_data.sql
+psql -P pager=off -v ON_ERROR_STOP=1 -d fcqa -f db/seeds/001_initial_data.sql
 ```
 
 如果需要导入 CSV 演示数据，请从仓库根目录执行：
 
 ```bash
-psql -v ON_ERROR_STOP=1 -d fcqa -f db/init_csv.sql
+psql -P pager=off -v ON_ERROR_STOP=1 -d fcqa -f db/init_csv.sql
 ```
 
 `db/init_csv.sql` 会先执行建表脚本，再调用 `db/seeds/import_csv.sql`；`import_csv.sql` 会按外键依赖顺序导入 CSV，并把所有 `SERIAL` 序列重置到当前最大 ID。
