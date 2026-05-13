@@ -6,6 +6,7 @@
 ## 内容
 
 - `001_initial_data.sql`：可直接通过 `psql` 导入的初始测试数据，覆盖基础查询、关联查询和统计查询场景。
+- `import_csv.sql`：可直接通过 `psql` 导入 `csv/` 下演示数据的脚本，包含清表、CSV 导入和序列重置。
 - `csv/`：可直接导入的演示 CSV 文件。
 
 所有在 PostgreSQL 中使用 `SERIAL` 的表均使用显式 ID 填充，以保证关联、截图与重复导入时的一致性。
@@ -23,6 +24,14 @@ psql -v ON_ERROR_STOP=1 -d fcqa -f db/init.sql
 ```bash
 psql -v ON_ERROR_STOP=1 -d fcqa -f db/seeds/001_initial_data.sql
 ```
+
+如果需要导入 CSV 演示数据，请从仓库根目录执行：
+
+```bash
+psql -v ON_ERROR_STOP=1 -d fcqa -f db/init_csv.sql
+```
+
+`db/init_csv.sql` 会先执行建表脚本，再调用 `db/seeds/import_csv.sql`；`import_csv.sql` 会按外键依赖顺序导入 CSV，并把所有 `SERIAL` 序列重置到当前最大 ID。
 
 ## 数据集范围
 

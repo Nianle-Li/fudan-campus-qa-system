@@ -41,6 +41,8 @@
 - 提交材料：
   - 建表与索引入口： [db/schema.sql](db/schema.sql)
   - 一键初始化入口： [db/init.sql](db/init.sql)
+  - CSV 统一初始化入口： [db/init_csv.sql](db/init_csv.sql)
+  - CSV 导入脚本： [db/seeds/import_csv.sql](db/seeds/import_csv.sql)
   - 建表与迁移脚本（按序）： [migrations](migrations)
   - 核心 SQL 快照： [db/schema_core.sql](db/schema_core.sql)
   - 主要约束设计说明： [docs/主要约束设计说明.md](docs/主要约束设计说明.md)
@@ -49,6 +51,7 @@
   - 初始/演示 CSV 数据： [db/seeds/csv](db/seeds/csv)
   - 基础验收查询： [db/verify_basic_queries.sql](db/verify_basic_queries.sql)
   - 导入查询展示说明： [docs/数据库导入查询展示说明.md](docs/数据库导入查询展示说明.md)
+  - CSV 导入验收记录： [docs/数据库CSV导入验收记录.md](docs/数据库CSV导入验收记录.md)
 - 快速初始化：
 
 ```bash
@@ -62,4 +65,20 @@ docker compose exec db psql -v ON_ERROR_STOP=1 -U postgres -d fcqa -f /opt/fcqa/
 createdb fcqa
 psql -v ON_ERROR_STOP=1 -d fcqa -f db/init.sql
 psql -v ON_ERROR_STOP=1 -d fcqa -f db/verify_basic_queries.sql
+```
+
+CSV 演示数据完整初始化（从仓库根目录执行，串联建表、CSV 导入和序列重置）：
+
+```bash
+createdb fcqa
+psql -v ON_ERROR_STOP=1 -d fcqa -f db/init_csv.sql
+psql -v ON_ERROR_STOP=1 -d fcqa -f db/verify_basic_queries.sql
+```
+
+Docker Compose 环境下也可切换到 CSV 演示数据：
+
+```bash
+docker compose up -d db
+docker compose exec -w /opt/fcqa db psql -v ON_ERROR_STOP=1 -U postgres -d fcqa -f db/init_csv.sql
+docker compose exec -w /opt/fcqa db psql -v ON_ERROR_STOP=1 -U postgres -d fcqa -f db/verify_basic_queries.sql
 ```

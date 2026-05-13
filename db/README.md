@@ -7,7 +7,9 @@
 - `schema_core.sql`：核心建表 SQL 快照，便于课程提交时快速查看表结构。
 - `schema.sql`：按顺序执行 `migrations/` 中的扩展、建表和索引脚本。
 - `init.sql`：完整初始化入口，执行 `schema.sql` 后继续导入初始测试数据。
+- `init_csv.sql`：CSV 版完整初始化入口，执行 `schema.sql` 后导入 `seeds/csv/` 并重置序列。
 - `seeds/001_initial_data.sql`：初始测试数据，覆盖基础查询、关联查询和统计查询场景。
+- `seeds/import_csv.sql`：CSV 批量导入脚本，按外键顺序清空并导入演示数据。
 - `verify_basic_queries.sql`：基础验收查询，用于确认导入后可支撑需求文档中的典型场景。
 
 ## 创建数据库并导入数据
@@ -44,6 +46,19 @@ createdb fcqa
 psql -v ON_ERROR_STOP=1 -d fcqa -f db/init.sql
 ```
 
+如需导入规模更大的 CSV 演示数据，从仓库根目录执行 CSV 初始化入口。该入口会串联建表、CSV 导入和序列重置：
+
+```bash
+createdb fcqa
+psql -v ON_ERROR_STOP=1 -d fcqa -f db/init_csv.sql
+```
+
+Docker Compose 环境下可在容器内以 `/opt/fcqa` 为工作目录运行同一个入口：
+
+```bash
+docker compose exec -w /opt/fcqa db psql -v ON_ERROR_STOP=1 -U postgres -d fcqa -f db/init_csv.sql
+```
+
 如果只需要创建表和索引，不导入测试数据：
 
 ```bash
@@ -55,6 +70,8 @@ psql -v ON_ERROR_STOP=1 -d fcqa -f db/schema.sql
 ```bash
 psql -v ON_ERROR_STOP=1 -d fcqa -f db/verify_basic_queries.sql
 ```
+
+CSV 导入后的行数、序列检查和示例查询结果见 [数据库CSV导入验收记录.md](../docs/数据库CSV导入验收记录.md)。
 
 ## 约束与索引
 
