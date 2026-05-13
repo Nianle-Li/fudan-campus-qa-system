@@ -45,21 +45,20 @@
   - 核心 SQL 快照： [db/schema_core.sql](db/schema_core.sql)
   - 主要约束设计说明： [docs/主要约束设计说明.md](docs/主要约束设计说明.md)
   - 初始 SQL 测试数据： [db/seeds/001_initial_data.sql](db/seeds/001_initial_data.sql)
-  - 初始/演示数据说明： [db/seeds/README.md](db/seeds/README.md)
-  - 初始/演示 CSV 数据： [db/seeds/csv](db/seeds/csv)
+  - CSV 演示数据说明： [db/seeds/README.md](db/seeds/README.md)
+  - CSV 演示数据： [db/seeds/csv](db/seeds/csv)
   - 基础验收查询： [db/verify_basic_queries.sql](db/verify_basic_queries.sql)
-  - 导入查询展示说明： [docs/数据库导入查询展示说明.md](docs/数据库导入查询展示说明.md)
-- 快速初始化：
+  - **导入、查询展示说明**： [docs/数据库导入查询展示说明.md](docs/数据库导入查询展示说明.md)
 
 ```bash
 docker compose up -d db
-docker compose exec db psql -v ON_ERROR_STOP=1 -U postgres -d fcqa -f /opt/fcqa/db/verify_basic_queries.sql
+docker compose exec db psql -P pager=off -v ON_ERROR_STOP=1 -U postgres -d fcqa -f /opt/fcqa/db/verify_basic_queries.sql
 ```
 
 或使用本机 PostgreSQL：
 
 ```bash
 createdb fcqa
-psql -v ON_ERROR_STOP=1 -d fcqa -f db/init.sql
-psql -v ON_ERROR_STOP=1 -d fcqa -f db/verify_basic_queries.sql
+psql -P pager=off -v ON_ERROR_STOP=1 -d fcqa -f db/init.sql
+psql -P pager=off -v ON_ERROR_STOP=1 -d fcqa -f db/verify_basic_queries.sql
 ```
