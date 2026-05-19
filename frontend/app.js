@@ -3,10 +3,14 @@ const state = {
   campuses: [],
   buildings: [],
   facilities: [],
+  activities: [],
   queryMode: "traditional",
   traditionalEntity: "campuses",
   browseTab: "history",
   browseEntity: "campuses",
+  currentView: "query",
+  browseRows: [],
+  popularQueryRows: [],
 };
 
 const entityColumns = {
@@ -70,6 +74,66 @@ const entityColumns = {
 };
 
 const editableEntities = new Set(["buildings", "facilities", "activities"]);
+
+const csvImportDefinitions = {
+  buildings: {
+    label: "建筑",
+    headers: ["name", "type", "campus_id"],
+    sample: ["批量导入教学楼", "教学楼", "1"],
+    aliases: {
+      建筑名称: "name",
+      名称: "name",
+      建筑类型: "type",
+      类型: "type",
+      所属校区ID: "campus_id",
+      校区ID: "campus_id",
+      campus: "campus_id",
+    },
+  },
+  facilities: {
+    label: "设施",
+    headers: ["name", "type", "open_time", "building_id"],
+    sample: ["批量导入自习室", "自习室", "每日 08:00-22:00", "1"],
+    aliases: {
+      设施名称: "name",
+      名称: "name",
+      设施类型: "type",
+      类型: "type",
+      开放时间: "open_time",
+      所属建筑ID: "building_id",
+      建筑ID: "building_id",
+    },
+  },
+  activities: {
+    label: "活动",
+    headers: ["name", "organizer", "start_time", "end_time", "facility_id", "description"],
+    sample: ["批量导入讲座", "学生事务中心", "2026-06-01T14:00", "2026-06-01T16:00", "1", "CSV 批量导入测试活动"],
+    aliases: {
+      活动名称: "name",
+      名称: "name",
+      主办单位: "organizer",
+      主办: "organizer",
+      开始时间: "start_time",
+      结束时间: "end_time",
+      举办设施ID: "facility_id",
+      设施ID: "facility_id",
+      活动简介: "description",
+      简介: "description",
+    },
+  },
+  query_logs: {
+    label: "查询记录",
+    headers: ["user_id", "query_category", "query_content"],
+    sample: ["4", "活动", "CSV 导入测试查询"],
+    aliases: {
+      用户ID: "user_id",
+      查询类别: "query_category",
+      类别: "query_category",
+      查询内容: "query_content",
+      内容: "query_content",
+    },
+  },
+};
 
 const traditionalDefinitions = {
   campuses: {
@@ -142,6 +206,27 @@ function showMessage(text, isError = false) {
   const box = $("#message");
   box.textContent = text;
   box.classList.toggle("error", isError);
+}
+
+function switchAdminView(view, options = {}) {
+  const validViews = new Set(["query", "browse", "maintain"]);
+  const nextView = validViews.has(view) ? view : "query";
+  state.currentView = nextView;
+  $$("[data-admin-section]").forEach((section) => {
+    section.classList.toggle("is-hidden", section.dataset.adminSection !== nextView);
+  });
+  $$("[data-admin-view]").forEach((button) => {
+    const active = button.dataset.adminView === nextView;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+  if (options.updateHash !== false && window.location.hash !== `#${nextView}`) {
+    window.history.replaceState(null, "", `#${nextView}`);
+  }
+  if (options.scroll !== false) {
+    const section = document.querySelector(`[data-admin-section="${nextView}"]`);
+    section?.scrollIntoView({ block: "start", behavior: "smooth" });
+  }
 }
 
 function buildQuery(params) {
@@ -227,17 +312,164 @@ function refreshOptions() {
 }
 
 async function loadReferenceData() {
-  const [meta, campuses, buildings, facilities] = await Promise.all([
+  const [meta, campuses, buildings, facilities, activities] = await Promise.all([
     api("/api/meta"),
     api("/api/campuses"),
     api("/api/buildings"),
     api("/api/facilities"),
+    api("/api/activities"),
   ]);
   state.meta = meta;
-  state.campuses = campuses.items;
-  state.buildings = buildings.items;
-  state.facilities = facilities.items;
+  state.campuses = campuses.items || [];
+  state.buildings = buildings.items || [];
+  state.facilities = facilities.items || [];
+  state.activities = activities.items || [];
   refreshOptions();
+  renderAdminMetrics();
+}
+
+function formatTime(value) {
+  if (!value) return "待定";
+  return String(value).slice(0, 16).replace("T", " ");
+}
+
+function previewText(value, maxLength = 42) {
+  const text = String(value ?? "").trim();
+  return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
+}
+
+function parseCsv(text) {
+  const rows = [];
+  let row = [];
+  let cell = "";
+  let inQuotes = false;
+  const normalized = text.replace(/^\uFEFF/, "");
+  for (let index = 0; index < normalized.length; index += 1) {
+    const char = normalized[index];
+    const next = normalized[index + 1];
+    if (char === '"' && inQuotes && next === '"') {
+      cell += '"';
+      index += 1;
+    } else if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === "," && !inQuotes) {
+      row.push(cell);
+      cell = "";
+    } else if ((char === "\n" || char === "\r") && !inQuotes) {
+      if (char === "\r" && next === "\n") index += 1;
+      row.push(cell);
+      if (row.some((value) => value.trim() !== "")) rows.push(row);
+      row = [];
+      cell = "";
+    } else {
+      cell += char;
+    }
+  }
+  row.push(cell);
+  if (row.some((value) => value.trim() !== "")) rows.push(row);
+  if (inQuotes) {
+    throw new Error("CSV 引号没有正确闭合");
+  }
+  return rows;
+}
+
+function csvEscape(value) {
+  const text = String(value ?? "");
+  return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+}
+
+function updateCsvImportHint() {
+  const entity = $("#csvImportEntity")?.value || "buildings";
+  const definition = csvImportDefinitions[entity];
+  if (!definition) return;
+  $("#csvImportHint").textContent = `${definition.label} CSV 字段：${definition.headers.join(", ")}`;
+}
+
+function normalizeCsvRow(entity, row) {
+  const definition = csvImportDefinitions[entity];
+  const normalized = {};
+  Object.entries(row).forEach(([key, value]) => {
+    const trimmedKey = key.trim();
+    const targetKey = definition.aliases[trimmedKey] || trimmedKey;
+    normalized[targetKey] = String(value ?? "").trim();
+  });
+  return normalized;
+}
+
+async function readCsvFile(file) {
+  const text = await file.text();
+  const rows = parseCsv(text);
+  if (rows.length < 2) {
+    throw new Error("CSV 至少需要表头和一行数据");
+  }
+  const headers = rows[0].map((header) => header.trim());
+  return rows.slice(1).map((values) => Object.fromEntries(headers.map((header, index) => [header, values[index] ?? ""])));
+}
+
+function renderImportResult(result) {
+  const errors = result.errors || [];
+  $("#csvImportResult").innerHTML = `
+    <div class="import-summary ${errors.length ? "has-errors" : ""}">
+      <strong>成功 ${escapeHtml(result.created_count)} 行</strong>
+      <span>失败 ${escapeHtml(result.failed_count)} 行</span>
+    </div>
+    ${
+      errors.length
+        ? `<div class="mini-list">${errors
+            .map((error) => `<article><span>第 ${escapeHtml(error.row)} 行</span><p>${escapeHtml(error.error)}</p></article>`)
+            .join("")}</div>`
+        : ""
+    }
+  `;
+}
+
+async function importCsv(event) {
+  event.preventDefault();
+  const entity = $("#csvImportEntity").value;
+  const file = $("#csvImportFile").files[0];
+  if (!file) {
+    showMessage("请选择 CSV 文件", true);
+    return;
+  }
+  const rawRows = await readCsvFile(file);
+  const rows = rawRows.map((row) => normalizeCsvRow(entity, row));
+  const result = await api("/api/import", {
+    method: "POST",
+    body: JSON.stringify({ entity, rows }),
+  });
+  renderImportResult(result);
+  showMessage(`CSV 导入完成：成功 ${result.created_count} 行，失败 ${result.failed_count} 行`, Boolean(result.failed_count));
+  if (["buildings", "facilities", "activities"].includes(entity)) {
+    await reloadAfterWrite(entity);
+  } else if (state.browseTab === "history" || state.browseTab === "popularQueries") {
+    await loadBrowse();
+  }
+}
+
+function downloadCsvTemplate() {
+  const entity = $("#csvImportEntity").value;
+  const definition = csvImportDefinitions[entity];
+  const csv = `${definition.headers.join(",")}\r\n${definition.sample.map(csvEscape).join(",")}\r\n`;
+  const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${entity}_template.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function renderAdminMetrics() {
+  const metrics = {
+    adminCampusCount: state.campuses.length,
+    adminBuildingCount: state.buildings.length,
+    adminFacilityCount: state.facilities.length,
+    adminActivityCount: state.activities.length,
+  };
+  Object.entries(metrics).forEach(([id, value]) => {
+    const node = document.getElementById(id);
+    if (node) node.textContent = String(value);
+  });
 }
 
 async function checkHealth() {
@@ -367,6 +599,164 @@ function renderRows(rows) {
   return `<table><thead><tr>${header}</tr></thead><tbody>${body}</tbody></table>`;
 }
 
+function renderDetailRows(items) {
+  return `
+    <dl class="detail-list">
+      ${items
+        .map(
+          ([label, value]) => `
+            <div>
+              <dt>${escapeHtml(label)}</dt>
+              <dd>${escapeHtml(value ?? "")}</dd>
+            </div>
+          `,
+        )
+        .join("")}
+    </dl>
+  `;
+}
+
+function setBrowseSurface(target, mode = "table") {
+  target.className = mode === "cards" ? "browse-card-surface" : "table-wrap";
+}
+
+function renderQueryLogDetail(row) {
+  const target = $("#browseDetail");
+  if (!target) return;
+  if (!row) {
+    target.innerHTML = `<div class="empty">从左侧选择一条查询记录查看完整信息</div>`;
+    return;
+  }
+  target.innerHTML = `
+    <div class="detail-heading">
+      <span class="badge">${escapeHtml(row.query_category)}</span>
+      <strong>查询记录 #${escapeHtml(row.log_id)}</strong>
+    </div>
+    <p class="detail-main">${escapeHtml(row.query_content)}</p>
+    ${renderDetailRows([
+      ["查询用户", `${row.user_name}（ID ${row.user_id}）`],
+      ["查询时间", formatTime(row.query_time)],
+      ["查询类别", row.query_category],
+      ["记录编号", row.log_id],
+    ])}
+  `;
+}
+
+function renderQueryLogList(target, rows) {
+  setBrowseSurface(target, "cards");
+  state.browseRows = rows;
+  if (!rows.length) {
+    target.innerHTML = `<div class="empty">没有匹配查询记录</div>`;
+    return;
+  }
+  target.innerHTML = `
+    <div class="detail-browser">
+      <div class="query-card-list" aria-label="查询记录列表">
+        ${rows
+          .map(
+            (row, index) => `
+              <button class="query-card ${index === 0 ? "is-active" : ""}" type="button" data-query-detail-index="${index}">
+                <span class="badge">${escapeHtml(row.query_category)}</span>
+                <strong>${escapeHtml(previewText(row.query_content, 32))}</strong>
+                <span>${escapeHtml(row.user_name)} · ${escapeHtml(formatTime(row.query_time))}</span>
+              </button>
+            `,
+          )
+          .join("")}
+      </div>
+      <aside id="browseDetail" class="detail-panel"></aside>
+    </div>
+  `;
+  $$("[data-query-detail-index]").forEach((button) => {
+    button.addEventListener("click", () => {
+      $$("[data-query-detail-index]").forEach((item) => item.classList.toggle("is-active", item === button));
+      renderQueryLogDetail(state.browseRows[Number(button.dataset.queryDetailIndex)]);
+    });
+  });
+  renderQueryLogDetail(rows[0]);
+}
+
+async function renderPopularQueryDetail(row) {
+  const target = $("#browseDetail");
+  if (!target) return;
+  if (!row) {
+    target.innerHTML = `<div class="empty">从左侧选择一个热门类别查看详情</div>`;
+    return;
+  }
+  target.innerHTML = `<div class="empty">正在加载 ${escapeHtml(row.query_category)} 的最近查询...</div>`;
+  const payload = await api(`/api/query-logs${buildQuery({ query_category: row.query_category, limit: 8 })}`);
+  const recent = payload.items || [];
+  target.innerHTML = `
+    <div class="detail-heading">
+      <span class="badge">${escapeHtml(row.query_category)}</span>
+      <strong>${escapeHtml(row.query_count)} 次查询</strong>
+    </div>
+    <p class="detail-main">${escapeHtml(row.latest_query || "暂无最近查询")}</p>
+    ${renderDetailRows([
+      ["最近查询时间", formatTime(row.latest_query_time)],
+      ["统计口径", "按 query_log.query_category 聚合"],
+      ["查询类别", row.query_category],
+    ])}
+    <div class="mini-list">
+      <strong>最近查询</strong>
+      ${
+        recent.length
+          ? recent
+              .map(
+                (item) => `
+                  <article>
+                    <span>${escapeHtml(formatTime(item.query_time))} · ${escapeHtml(item.user_name)}</span>
+                    <p>${escapeHtml(item.query_content)}</p>
+                  </article>
+                `,
+              )
+              .join("")
+          : `<div class="empty">暂无最近查询记录</div>`
+      }
+    </div>
+  `;
+}
+
+function renderPopularQueryList(target, rows) {
+  setBrowseSurface(target, "cards");
+  state.popularQueryRows = rows;
+  if (!rows.length) {
+    target.innerHTML = `<div class="empty">暂无热门查询统计</div>`;
+    return;
+  }
+  const total = rows.reduce((sum, row) => sum + Number(row.query_count || 0), 0);
+  target.innerHTML = `
+    <div class="detail-browser popular-browser">
+      <div class="query-card-list" aria-label="热门查询榜单">
+        ${rows
+          .map((row, index) => {
+            const count = Number(row.query_count || 0);
+            const percent = total ? Math.round((count / total) * 100) : 0;
+            return `
+              <button class="query-card rank-card ${index === 0 ? "is-active" : ""}" type="button" data-popular-query-index="${index}">
+                <span class="rank-number">#${index + 1}</span>
+                <strong>${escapeHtml(row.query_category)}</strong>
+                <span>${escapeHtml(count)} 次 · 最近：${escapeHtml(previewText(row.latest_query, 26))}</span>
+                <i style="--bar:${percent}%"></i>
+              </button>
+            `;
+          })
+          .join("")}
+      </div>
+      <aside id="browseDetail" class="detail-panel"></aside>
+    </div>
+  `;
+  $$("[data-popular-query-index]").forEach((button) => {
+    button.addEventListener("click", () => {
+      $$("[data-popular-query-index]").forEach((item) => item.classList.toggle("is-active", item === button));
+      renderPopularQueryDetail(state.popularQueryRows[Number(button.dataset.popularQueryIndex)]).catch((error) =>
+        showMessage(error.message, true),
+      );
+    });
+  });
+  renderPopularQueryDetail(rows[0]).catch((error) => showMessage(error.message, true));
+}
+
 function browseFilterField(field) {
   if (field.type === "select") {
     const options = selectOptions(field.source);
@@ -442,20 +832,22 @@ async function loadBrowse(event) {
 
   if (state.browseTab === "history") {
     const payload = await api(`/api/query-logs${buildQuery(params)}`);
-    renderTable(target, "queryLogs", payload.items || []);
+    renderQueryLogList(target, payload.items || []);
     return;
   }
   if (state.browseTab === "popularQueries") {
     const payload = await api(`/api/insights/popular-queries${buildQuery(params)}`);
-    renderTable(target, "popularQueries", payload.items || []);
+    renderPopularQueryList(target, payload.items || []);
     return;
   }
   if (state.browseTab === "popularActivities") {
+    setBrowseSurface(target, "table");
     const payload = await api(`/api/insights/popular-activities${buildQuery(params)}`);
     renderTable(target, "popularActivities", payload.items || []);
     return;
   }
   if (state.browseTab === "data") {
+    setBrowseSurface(target, "table");
     const entity = params.entity || state.browseEntity;
     state.browseEntity = entity;
     delete params.entity;
@@ -467,6 +859,7 @@ async function loadBrowse(event) {
 }
 
 async function loadSqlExamples(target = $("#browseContent")) {
+  setBrowseSurface(target, "cards");
   const payload = await api("/api/sql-examples");
   target.innerHTML = payload.items
     .map((item) => {
@@ -506,6 +899,7 @@ function setFormValues(form, values) {
 }
 
 function fillEditForm(entity, row) {
+  switchAdminView("maintain");
   if (entity === "buildings") {
     showForm("buildingForm");
     setFormValues($("#buildingForm"), row);
@@ -607,6 +1001,10 @@ async function deleteCurrent(kind) {
 }
 
 function bindEvents() {
+  $$("[data-admin-view]").forEach((button) => {
+    button.addEventListener("click", () => switchAdminView(button.dataset.adminView));
+  });
+  window.addEventListener("hashchange", () => switchAdminView(window.location.hash.slice(1), { updateHash: false }));
   $$(".mode-button").forEach((button) => {
     button.addEventListener("click", () => setQueryMode(button.dataset.queryMode));
   });
@@ -654,10 +1052,15 @@ function bindEvents() {
   $("#facilityForm").addEventListener("submit", (event) => saveFacility(event).catch((error) => showMessage(error.message, true)));
   $("#activityForm").addEventListener("submit", (event) => saveActivity(event).catch((error) => showMessage(error.message, true)));
   $("#queryLogForm").addEventListener("submit", (event) => saveQueryLog(event).catch((error) => showMessage(error.message, true)));
+  $("#csvImportForm").addEventListener("submit", (event) => importCsv(event).catch((error) => showMessage(error.message, true)));
+  $("#csvImportEntity").addEventListener("change", updateCsvImportHint);
+  $("#downloadCsvTemplateBtn").addEventListener("click", downloadCsvTemplate);
 }
 
 async function init() {
   bindEvents();
+  switchAdminView(window.location.hash.slice(1), { updateHash: false, scroll: false });
+  updateCsvImportHint();
   await checkHealth();
   await loadReferenceData();
   renderTraditionalFields();

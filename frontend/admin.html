@@ -8,9 +8,12 @@
   </head>
   <body class="admin-shell">
     <header class="topbar">
-      <div>
-        <h1>复旦校园百事通</h1>
-        <p>管理员数据治理与查询工作台</p>
+      <div class="brand-block">
+        <div class="brand-mark" aria-hidden="true">管</div>
+        <div>
+          <h1>复旦校园百事通</h1>
+          <p>管理员数据治理与查询工作台</p>
+        </div>
       </div>
       <nav class="app-nav" aria-label="前端入口">
         <a href="/">用户端</a>
@@ -20,7 +23,47 @@
     </header>
 
     <main class="workspace">
-      <section class="panel query-panel">
+      <section class="overview-strip" aria-label="系统数据概览">
+        <article class="metric-tile">
+          <span>校区</span>
+          <strong id="adminCampusCount">--</strong>
+        </article>
+        <article class="metric-tile">
+          <span>建筑</span>
+          <strong id="adminBuildingCount">--</strong>
+        </article>
+        <article class="metric-tile">
+          <span>设施</span>
+          <strong id="adminFacilityCount">--</strong>
+        </article>
+        <article class="metric-tile">
+          <span>活动</span>
+          <strong id="adminActivityCount">--</strong>
+        </article>
+        <article class="metric-tile metric-tile-wide">
+          <span>核心业务表</span>
+          <strong>14</strong>
+        </article>
+      </section>
+
+      <section class="panel feature-entry admin-feature-entry" aria-label="管理员端功能入口">
+        <button class="feature-button is-active" type="button" data-admin-view="query" aria-pressed="true">
+          <strong>查询工作台</strong>
+          <span>传统筛选与自然语言查询</span>
+        </button>
+        <button class="feature-button" type="button" data-admin-view="browse" aria-pressed="false">
+          <strong>自由浏览</strong>
+          <span>历史、热门、数据表与 SQL 结果</span>
+        </button>
+        <button class="feature-button" type="button" data-admin-view="maintain" aria-pressed="false">
+          <strong>数据维护</strong>
+          <span>维护建筑、设施、活动与查询记录</span>
+        </button>
+      </section>
+
+      <div id="message" class="message global-message" aria-live="polite"></div>
+
+      <section class="panel query-panel view-section" data-admin-section="query">
         <div class="panel-title query-title">
           <h2>查询工作台</h2>
           <div class="mode-switch" role="tablist" aria-label="查询模式">
@@ -71,10 +114,9 @@
         </div>
 
         <div id="queryResult" class="result-box"></div>
-        <div id="message" class="message" aria-live="polite"></div>
       </section>
 
-      <section class="panel browse-panel">
+      <section class="panel browse-panel view-section is-hidden" data-admin-section="browse">
         <div class="panel-title">
           <h2>自由浏览</h2>
           <button id="refreshBrowseBtn" type="button">刷新</button>
@@ -90,10 +132,37 @@
         <div id="browseContent" class="table-wrap"></div>
       </section>
 
-      <section class="panel form-panel">
+      <section class="panel form-panel view-section is-hidden" data-admin-section="maintain">
         <div class="panel-title">
           <h2>数据维护</h2>
         </div>
+        <section class="csv-import-box" aria-label="CSV批量导入">
+          <div>
+            <h3>CSV 批量导入</h3>
+            <p id="csvImportHint">选择导入对象后上传 UTF-8 CSV 文件，首行必须是字段名。</p>
+          </div>
+          <form id="csvImportForm" class="csv-import-form">
+            <label>
+              导入对象
+              <select id="csvImportEntity" name="entity">
+                <option value="buildings">建筑</option>
+                <option value="facilities">设施</option>
+                <option value="activities">活动</option>
+                <option value="query_logs">查询记录</option>
+              </select>
+            </label>
+            <label>
+              CSV 文件
+              <input id="csvImportFile" name="file" type="file" accept=".csv,text/csv" required />
+            </label>
+            <div class="actions">
+              <button type="submit">导入 CSV</button>
+              <button id="downloadCsvTemplateBtn" type="button" class="secondary-button">模板</button>
+            </div>
+          </form>
+          <div id="csvImportResult" class="import-result"></div>
+        </section>
+
         <div class="tabs maintenance-tabs" role="tablist" aria-label="维护对象">
           <button class="tab is-active" data-form="buildingForm" type="button">建筑</button>
           <button class="tab" data-form="facilityForm" type="button">设施</button>

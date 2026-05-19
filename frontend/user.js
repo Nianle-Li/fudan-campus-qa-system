@@ -3,8 +3,10 @@ const state = {
   campuses: [],
   activities: [],
   reservations: [],
+  popularQueries: [],
   currentUserId: 4,
   exploreEntity: "facilities",
+  currentView: "activities",
 };
 
 const exploreColumns = {
@@ -61,9 +63,35 @@ function showMessage(text, isError = false) {
   showMessage.timer = window.setTimeout(() => box.classList.remove("is-visible"), 2600);
 }
 
+function switchUserView(view, options = {}) {
+  const validViews = new Set(["activities", "reservations", "assistant", "explore", "popular"]);
+  const nextView = validViews.has(view) ? view : "activities";
+  state.currentView = nextView;
+  $$("[data-user-section]").forEach((section) => {
+    section.classList.toggle("is-hidden", section.dataset.userSection !== nextView);
+  });
+  $$("[data-user-view]").forEach((button) => {
+    const active = button.dataset.userView === nextView;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+  if (options.updateHash !== false && window.location.hash !== `#${nextView}`) {
+    window.history.replaceState(null, "", `#${nextView}`);
+  }
+  if (options.scroll !== false) {
+    const section = document.querySelector(`[data-user-section="${nextView}"]`);
+    section?.scrollIntoView({ block: "start", behavior: "smooth" });
+  }
+}
+
 function formatTime(value) {
   if (!value) return "待定";
   return String(value).slice(0, 16).replace("T", " ");
+}
+
+function previewText(value, maxLength = 38) {
+  const text = String(value ?? "").trim();
+  return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
 }
 
 function currentUser() {
@@ -98,6 +126,7 @@ async function loadReferenceData() {
   }
   renderUserSelect();
   renderCampusFilter();
+  renderUserMetrics();
 }
 
 function renderUserSelect() {
@@ -146,6 +175,7 @@ async function loadReservations() {
 
 function renderActivities() {
   const target = $("#activityCards");
+  renderUserMetrics();
   if (!state.activities.length) {
     target.innerHTML = `<div class="empty">没有匹配活动</div>`;
     return;
@@ -184,6 +214,7 @@ function renderActivities() {
 
 function renderReservations() {
   const target = $("#reservationList");
+  renderUserMetrics();
   if (!state.reservations.length) {
     target.innerHTML = `<div class="empty">当前用户还没有预约活动</div>`;
     return;
@@ -204,6 +235,18 @@ function renderReservations() {
     .join("");
   $$("[data-cancel]").forEach((button) => {
     button.addEventListener("click", () => cancelReservation(Number(button.dataset.cancel)).catch((error) => showMessage(error.message, true)));
+  });
+}
+
+function renderUserMetrics() {
+  const metrics = {
+    userCampusCount: state.campuses.length,
+    userActivityCount: state.activities.length,
+    userReservationCount: state.reservations.length,
+  };
+  Object.entries(metrics).forEach(([id, value]) => {
+    const node = document.getElementById(id);
+    if (node) node.textContent = String(value);
   });
 }
 
@@ -276,7 +319,87 @@ async function loadExplore(event) {
     : `<div class="empty">没有匹配数据</div>`;
 }
 
+async function loadPopularQueries() {
+  const payload = await api("/api/insights/popular-queries?limit=8");
+  state.popularQueries = payload.items || [];
+  renderPopularQueries();
+}
+
+async function showPopularQueryDetail(index) {
+  const row = state.popularQueries[index];
+  const target = $("#popularQueryDetail");
+  if (!row || !target) return;
+  target.innerHTML = `<div class="empty">正在加载最近查询...</div>`;
+  const payload = await api(`/api/query-logs${buildQuery({ query_category: row.query_category, limit: 6 })}`);
+  const recent = payload.items || [];
+  target.innerHTML = `
+    <div class="detail-heading">
+      <span class="badge">${escapeHtml(row.query_category)}</span>
+      <strong>${escapeHtml(row.query_count)} 次查询</strong>
+    </div>
+    <p class="detail-main">${escapeHtml(row.latest_query || "暂无最近查询")}</p>
+    <div class="mini-list">
+      <strong>最近相关问题</strong>
+      ${
+        recent.length
+          ? recent
+              .map(
+                (item) => `
+                  <article>
+                    <span>${escapeHtml(formatTime(item.query_time))} · ${escapeHtml(item.user_name)}</span>
+                    <p>${escapeHtml(item.query_content)}</p>
+                  </article>
+                `,
+              )
+              .join("")
+          : `<div class="empty">暂无最近查询记录</div>`
+      }
+    </div>
+  `;
+}
+
+function renderPopularQueries() {
+  const target = $("#popularQueryContent");
+  if (!state.popularQueries.length) {
+    target.innerHTML = `<div class="empty">暂无热门查询统计</div>`;
+    return;
+  }
+  const total = state.popularQueries.reduce((sum, row) => sum + Number(row.query_count || 0), 0);
+  target.innerHTML = `
+    <div class="detail-browser popular-browser">
+      <div class="query-card-list">
+        ${state.popularQueries
+          .map((row, index) => {
+            const count = Number(row.query_count || 0);
+            const percent = total ? Math.round((count / total) * 100) : 0;
+            return `
+              <button class="query-card rank-card ${index === 0 ? "is-active" : ""}" type="button" data-user-popular-index="${index}">
+                <span class="rank-number">#${index + 1}</span>
+                <strong>${escapeHtml(row.query_category)}</strong>
+                <span>${escapeHtml(count)} 次 · 最近：${escapeHtml(previewText(row.latest_query, 28))}</span>
+                <i style="--bar:${percent}%"></i>
+              </button>
+            `;
+          })
+          .join("")}
+      </div>
+      <aside id="popularQueryDetail" class="detail-panel"></aside>
+    </div>
+  `;
+  $$("[data-user-popular-index]").forEach((button) => {
+    button.addEventListener("click", () => {
+      $$("[data-user-popular-index]").forEach((item) => item.classList.toggle("is-active", item === button));
+      showPopularQueryDetail(Number(button.dataset.userPopularIndex)).catch((error) => showMessage(error.message, true));
+    });
+  });
+  showPopularQueryDetail(0).catch((error) => showMessage(error.message, true));
+}
+
 function bindEvents() {
+  $$("[data-user-view]").forEach((button) => {
+    button.addEventListener("click", () => switchUserView(button.dataset.userView));
+  });
+  window.addEventListener("hashchange", () => switchUserView(window.location.hash.slice(1), { updateHash: false }));
   $("#userSelect").addEventListener("change", async (event) => {
     state.currentUserId = Number(event.target.value);
     updateUserProfile();
@@ -302,13 +425,15 @@ function bindEvents() {
     loadExplore().catch((error) => showMessage(error.message, true));
   });
   $("#exploreForm").addEventListener("submit", (event) => loadExplore(event).catch((error) => showMessage(error.message, true)));
+  $("#refreshPopularQueriesBtn").addEventListener("click", () => loadPopularQueries().catch((error) => showMessage(error.message, true)));
 }
 
 async function init() {
   bindEvents();
+  switchUserView(window.location.hash.slice(1), { updateHash: false, scroll: false });
   await checkHealth();
   await loadReferenceData();
-  await Promise.all([loadActivities(), loadReservations(), askNaturalLanguage(), loadExplore()]);
+  await Promise.all([loadActivities(), loadReservations(), askNaturalLanguage(), loadExplore(), loadPopularQueries()]);
 }
 
 init().catch((error) => showMessage(error.message, true));

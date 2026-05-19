@@ -8,9 +8,12 @@
   </head>
   <body class="user-shell">
     <header class="topbar user-topbar">
-      <div>
-        <h1>复旦校园百事通</h1>
-        <p>活动预约、校园查询与个人行程</p>
+      <div class="brand-block">
+        <div class="brand-mark" aria-hidden="true">复</div>
+        <div>
+          <h1>复旦校园百事通</h1>
+          <p>活动预约、校园查询与个人行程</p>
+        </div>
       </div>
       <nav class="app-nav" aria-label="前端入口">
         <a class="is-active" href="/">用户端</a>
@@ -23,8 +26,22 @@
       <section class="panel user-hero">
         <div class="hero-copy">
           <span class="eyebrow">Campus Assistant</span>
-          <h2>查活动、约名额、看安排，一屏完成</h2>
-          <p>选择身份后即可浏览近期活动并预约，也可以用自然语言直接询问课程、设施、活动和校区信息。</p>
+          <h2>按功能进入校园服务</h2>
+          <p>先选择身份，再进入活动预约、我的预约、自然语言查询或校园速览等独立界面。</p>
+          <div class="hero-stats" aria-label="用户端数据概览">
+            <div>
+              <strong id="userCampusCount">--</strong>
+              <span>校区</span>
+            </div>
+            <div>
+              <strong id="userActivityCount">--</strong>
+              <span>当前活动</span>
+            </div>
+            <div>
+              <strong id="userReservationCount">--</strong>
+              <span>我的预约</span>
+            </div>
+          </div>
         </div>
         <div class="hero-controls">
           <label>
@@ -35,7 +52,30 @@
         </div>
       </section>
 
-      <section class="panel activity-panel">
+      <section class="panel feature-entry user-feature-entry" aria-label="用户端功能入口">
+        <button class="feature-button is-active" type="button" data-user-view="activities" aria-pressed="true">
+          <strong>活动预约</strong>
+          <span>筛选近期活动并预约名额</span>
+        </button>
+        <button class="feature-button" type="button" data-user-view="reservations" aria-pressed="false">
+          <strong>我的预约</strong>
+          <span>查看与取消当前用户预约</span>
+        </button>
+        <button class="feature-button" type="button" data-user-view="assistant" aria-pressed="false">
+          <strong>自然语言查询</strong>
+          <span>用中文问句查询课程、设施和活动</span>
+        </button>
+        <button class="feature-button" type="button" data-user-view="explore" aria-pressed="false">
+          <strong>校园速览</strong>
+          <span>快速浏览设施、课程和建筑</span>
+        </button>
+        <button class="feature-button" type="button" data-user-view="popular" aria-pressed="false">
+          <strong>热门查询</strong>
+          <span>查看大家最近关注的信息类别</span>
+        </button>
+      </section>
+
+      <section class="panel activity-panel view-section" data-user-section="activities">
         <div class="panel-title">
           <h2>活动预约</h2>
           <button id="refreshActivitiesBtn" type="button">刷新</button>
@@ -52,7 +92,7 @@
         <div id="activityCards" class="activity-grid"></div>
       </section>
 
-      <aside class="panel reservation-panel">
+      <aside class="panel reservation-panel view-section is-hidden" data-user-section="reservations">
         <div class="panel-title">
           <h2>我的预约</h2>
           <button id="refreshReservationsBtn" type="button">刷新</button>
@@ -60,7 +100,7 @@
         <div id="reservationList" class="reservation-list"></div>
       </aside>
 
-      <section class="panel assistant-panel">
+      <section class="panel assistant-panel view-section is-hidden" data-user-section="assistant">
         <div class="panel-title">
           <h2>自然语言查询</h2>
         </div>
@@ -80,7 +120,7 @@
         <div id="nlAnswer" class="answer-box compact-answer"></div>
       </section>
 
-      <section class="panel explore-panel">
+      <section class="panel explore-panel view-section is-hidden" data-user-section="explore">
         <div class="panel-title">
           <h2>校园速览</h2>
           <select id="exploreEntity">
@@ -94,6 +134,14 @@
           <button type="submit">查看</button>
         </form>
         <div id="exploreContent" class="compact-list"></div>
+      </section>
+
+      <section class="panel popular-panel view-section is-hidden" data-user-section="popular">
+        <div class="panel-title">
+          <h2>热门查询</h2>
+          <button id="refreshPopularQueriesBtn" type="button">刷新</button>
+        </div>
+        <div id="popularQueryContent" class="popular-query-board"></div>
       </section>
 
       <div id="message" class="toast-message" aria-live="polite"></div>

@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from http import HTTPStatus
 from typing import Any, Protocol
+
+from ..errors import ApiError
 
 
 class CampusRepository(Protocol):
@@ -56,8 +59,59 @@ class CampusRepository(Protocol):
 
     def natural_language_query(self, payload: dict[str, Any]) -> dict[str, Any]: ...
 
+    def import_rows(self, payload: dict[str, Any]) -> dict[str, Any]: ...
+
 
 class BaseRepository:
+    def import_rows(self, payload: dict[str, Any]) -> dict[str, Any]:
+        entity_aliases = {
+            "building": "buildings",
+            "buildings": "buildings",
+            "facility": "facilities",
+            "facilities": "facilities",
+            "activity": "activities",
+            "activities": "activities",
+            "query_log": "query_logs",
+            "query_logs": "query_logs",
+        }
+        creator_names = {
+            "buildings": "create_building",
+            "facilities": "create_facility",
+            "activities": "create_activity",
+            "query_logs": "create_query_log",
+        }
+        raw_entity = str(payload.get("entity", "")).strip()
+        entity = entity_aliases.get(raw_entity)
+        if entity is None:
+            raise ApiError(HTTPStatus.BAD_REQUEST, "导入对象只支持 buildings、facilities、activities、query_logs")
+        rows = payload.get("rows")
+        if not isinstance(rows, list):
+            raise ApiError(HTTPStatus.BAD_REQUEST, "rows 必须是数组")
+        if len(rows) > 200:
+            raise ApiError(HTTPStatus.BAD_REQUEST, "单次最多导入 200 行")
+
+        creator = getattr(self, creator_names[entity])
+        items: list[dict[str, Any]] = []
+        errors: list[dict[str, Any]] = []
+        for index, row in enumerate(rows, start=1):
+            if not isinstance(row, dict):
+                errors.append({"row": index, "error": "该行不是对象"})
+                continue
+            cleaned = {str(key).strip(): value for key, value in row.items() if str(key).strip()}
+            try:
+                items.append(creator(cleaned))
+            except ApiError as exc:
+                errors.append({"row": index, "error": exc.message})
+            except Exception as exc:  # noqa: BLE001 - keep importing later CSV rows.
+                errors.append({"row": index, "error": str(exc)})
+        return {
+            "entity": entity,
+            "created_count": len(items),
+            "failed_count": len(errors),
+            "items": items,
+            "errors": errors,
+        }
+
     def summarize_answer(self, plan: dict[str, Any], rows: list[dict[str, Any]]) -> str:
         if not rows:
             return f"没有找到与“{plan['title']}”匹配的数据。"

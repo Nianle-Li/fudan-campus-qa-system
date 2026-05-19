@@ -58,6 +58,22 @@ class ApiRouterTest(unittest.TestCase):
         self.assertIn("query_count", popular_queries[0])
         self.assertIn("participant_count", popular_activities[0])
 
+    def test_csv_import_route_batches_supported_rows(self) -> None:
+        result = self.router.route(
+            "POST",
+            "/api/import",
+            read_payload=lambda: {
+                "entity": "buildings",
+                "rows": [
+                    {"name": "批量测试楼A", "type": "教学楼", "campus_id": 1},
+                    {"name": "批量测试楼B", "type": "综合楼", "campus_id": 1},
+                ],
+            },
+        )
+        self.assertEqual(result["created_count"], 2)
+        self.assertEqual(result["failed_count"], 0)
+        self.assertEqual(result["items"][0]["name"], "批量测试楼A")
+
     def test_user_reservation_routes(self) -> None:
         users = self.router.route("GET", "/api/users")["items"]
         self.assertGreaterEqual(len(users), 1)

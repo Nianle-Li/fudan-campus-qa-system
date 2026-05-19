@@ -194,7 +194,14 @@ ORDER BY b.name
         }
 
     if "活动" in compact or "讲座" in compact or "比赛" in compact or "工作坊" in compact:
-        term = "" if ("近期" in compact or "最近" in compact or ("有哪些" in compact and "活动" in compact)) else extract_search_term(compact)
+        extracted_term = extract_search_term(compact)
+        generic_activity_query = (
+            "近期" in compact
+            or "最近" in compact
+            or ("有哪些" in compact and "活动" in compact)
+            or extracted_term in {"活动", "校园活动", "校内活动"}
+        )
+        term = "" if generic_activity_query else extracted_term
         if term:
             where = "WHERE a.name ILIKE %s OR a.description ILIKE %s OR a.organizer ILIKE %s"
             params = (f"%{term}%", f"%{term}%", f"%{term}%")

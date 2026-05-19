@@ -48,6 +48,20 @@ class DemoRepositoryTest(unittest.TestCase):
         self.assertGreaterEqual(popular_queries[0]["query_count"], 1)
         self.assertGreaterEqual(popular_activities[0]["participant_count"], 1)
 
+    def test_import_rows_reports_success_and_row_errors(self) -> None:
+        result = self.repository.import_rows(
+            {
+                "entity": "query_logs",
+                "rows": [
+                    {"user_id": 4, "query_category": "活动", "query_content": "批量查询"},
+                    {"user_id": 4, "query_category": "不存在", "query_content": "错误类别"},
+                ],
+            }
+        )
+        self.assertEqual(result["created_count"], 1)
+        self.assertEqual(result["failed_count"], 1)
+        self.assertEqual(result["errors"][0]["row"], 2)
+
     def test_activity_reservation_lifecycle(self) -> None:
         created = self.repository.reserve_activity(3, {"user_id": 4})
         self.assertEqual(created["status"], "待参加")

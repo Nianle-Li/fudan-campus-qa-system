@@ -63,6 +63,8 @@ class ApiRouter:
             return repository.natural_language_query(read_payload())
         if method == "GET" and path == "/api/sql-examples":
             return {"items": repository.sql_examples()}
+        if method == "POST" and path == "/api/import":
+            return repository.import_rows(read_payload())
 
         user_reservations_match = re.fullmatch(r"/api/users/(\d+)/reservations", path)
         if user_reservations_match and method == "GET":

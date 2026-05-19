@@ -4,6 +4,7 @@ from datetime import datetime
 from http import HTTPStatus
 from typing import Any
 
+from ..constants import QUERY_CATEGORIES
 from ..errors import ApiError
 from ..nl_query import build_nl_query
 from ..sql_examples import SQL_EXAMPLES
@@ -291,11 +292,14 @@ class DemoRepository(BaseRepository):
         return {"deleted": 1}
 
     def create_query_log(self, payload: dict[str, Any]) -> dict[str, Any]:
+        category = clean_text(payload, "query_category", default="其他")
+        if category not in QUERY_CATEGORIES:
+            raise ApiError(HTTPStatus.BAD_REQUEST, "查询类别不在允许范围内")
         row = {
             "log_id": self.next_log_id,
             "user_id": clean_int(payload, "user_id"),
             "user_name": f"用户{payload.get('user_id', '')}",
-            "query_category": clean_text(payload, "query_category", default="其他"),
+            "query_category": category,
             "query_content": clean_text(payload, "query_content"),
             "query_time": datetime.now().isoformat(sep=" ", timespec="seconds"),
         }

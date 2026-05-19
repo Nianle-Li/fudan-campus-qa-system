@@ -22,6 +22,12 @@ class NaturalLanguageQueryTest(unittest.TestCase):
         plan = build_nl_query("热门活动有哪些？")
         self.assertEqual(plan["intent"], "hot_activities")
 
+    def test_generic_activity_question_returns_recent_activities(self) -> None:
+        plan = build_nl_query("校园活动？")
+        self.assertEqual(plan["intent"], "recent_activities")
+        self.assertEqual(plan["title"], "查询近期校园活动")
+        self.assertEqual(plan["params"], ())
+
     def test_global_search_fallback_keeps_useful_term(self) -> None:
         self.assertEqual(extract_search_term("请问光华楼在哪里？"), "光华楼在")
 
